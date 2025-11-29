@@ -126,3 +126,26 @@ class FileStorage:
             return True
         except Exception:
             return False
+
+    def move_file(self, user_uuid: str, source_path: str, destination_path: str) -> bool:
+        """Перемещает или переименовывает файл или директорию"""
+        try:
+            source = self._resolve_path(user_uuid, source_path)
+            destination = self._resolve_path(user_uuid, destination_path)
+
+            if not source.exists():
+                return False
+
+            if destination.exists():
+                raise ValidationError('Файл назначения уже существует')
+
+            destination.parent.mkdir(parents=True, exist_ok=True)
+
+            shutil.move(str(source), str(destination))
+
+            return True
+        except ValidationError:
+            raise
+        except Exception as e:
+            server_logger.error(f'Ошибка при перемещении файла: {e}')
+            return False

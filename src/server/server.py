@@ -28,6 +28,7 @@ class Server:
             'GET': self.handle_get,
             'PUT': self.handle_put,
             'DELETE': self.handle_delete,
+            'MOVE': self.handle_move,
         }
 
     def _get_user_uuid(self, writer: asyncio.StreamWriter) -> str | None:
@@ -179,6 +180,21 @@ class Server:
         else:
             await ServerProtocol.send_error(writer, 'Ошибка удаления')
             server_logger.warning(f'Ошибка удаления: {path} для пользователя {user_uuid}')
+
+    async def handle_move(
+        self, command: dict, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, addr: tuple
+    ) -> None:
+        """Обрабатывает команду MOVE"""
+        user_uuid = self._require_auth(writer)
+        source = self._validate_input(command.get('source', ''), 'Исходный путь', config.max_path_length)
+        destination = self._validate_input(command.get('destination', ''), 'Путь назначения', config.max_path_length)
+
+        if self.storage.move_file(user_uuid, source, destination):
+            await ServerProtocol.send_ok(writer, {'message': 'Перемещено успешно'})
+            server_logger.info(f'Перемещено: {source} -> {destination} для пользователя {user_uuid}')
+        else:
+            await ServerProtocol.send_error(writer, 'Ошибка перемещения: файл не найден')
+            server_logger.warning(f'Ошибка перемещения: {source} для пользователя {user_uuid}')
 
     async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         """Обрабатывает подключение клиента"""

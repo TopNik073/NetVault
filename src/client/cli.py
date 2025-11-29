@@ -156,6 +156,19 @@ def delete(path: str, login: str | None, password: str | None):
 
 
 @cli.command()
+@click.argument('source_path')
+@click.argument('destination_path')
+@click.option('--login', help='Логин для авторизации (если не авторизован)')
+@click.option('--password', help='Пароль для авторизации (если не авторизован)')
+def move(source_path: str, destination_path: str, login: str | None, password: str | None):
+    """Перемещает или переименовывает файл или директорию на сервере"""
+    client = get_client()
+    if not ensure_authenticated(client, login, password):
+        return
+    run_async(client.move_file(source_path, destination_path))
+
+
+@cli.command()
 def interactive():
     """Запускает интерактивный режим (соединение сохраняется между командами)"""
     click.echo("Интерактивный режим. Введите 'help' для справки, 'exit' для выхода.")
@@ -230,16 +243,23 @@ def interactive():
                 else:
                     click.echo('Использование: delete <path>', err=True)
 
+            elif cmd == 'move':
+                if len(args) >= MIN_LOGIN_ARGS:
+                    run_async(client.move_file(args[0], args[1]))
+                else:
+                    click.echo('Использование: move <source_path> <destination_path>', err=True)
+
             elif cmd == 'help':
                 click.echo("""
 Доступные команды:
-  login <логин> <пароль>    - Авторизация
+  login <логин> <пароль>     - Авторизация
   register <логин> <пароль>  - Регистрация
-  logout                    - Выход из аккаунта
+  logout                     - Выход из аккаунта
   list [path]                - Список файлов
   get <remote> <local>       - Скачать файл
   put <local> <remote>       - Загрузить файл
   delete <path>              - Удалить файл/папку
+  move <source> <dest>       - Переместить/переименовать файл/папку
   exit                       - Выход
                 """)
 

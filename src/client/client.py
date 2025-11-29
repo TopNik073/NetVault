@@ -268,3 +268,29 @@ class FileStorageClient:
             client_logger.error(f'Ошибка при удалении: {e}')
             click.echo(f'Ошибка при удалении: {e}', err=True)
             return False
+
+    async def move_file(self, source_path: str, destination_path: str) -> bool:
+        """Перемещает или переименовывает файл или директорию на сервере"""
+        try:
+            await self._ensure_connection()
+            self._require_auth()
+
+            client_logger.info(f'Перемещение: {source_path} -> {destination_path}')
+            await ClientProtocol.send_json_message(
+                self.writer, {'command': 'MOVE', 'source': source_path, 'destination': destination_path}
+            )
+
+            response = await ClientProtocol.read_json_message(self.reader)
+            if response and response.get('status') == 'OK':
+                client_logger.info(f'Перемещено: {source_path} -> {destination_path}')
+                click.echo(f'Перемещено: {source_path} -> {destination_path}')
+                return True
+            error_msg = response.get('message', 'Ошибка') if response else 'Ошибка'
+            raise FileError(error_msg)
+        except (StorageConnectionError, AuthenticationError, FileError) as e:
+            click.echo(str(e), err=True)
+            return False
+        except Exception as e:
+            client_logger.error(f'Ошибка при перемещении: {e}')
+            click.echo(f'Ошибка при перемещении: {e}', err=True)
+            return False
