@@ -5,87 +5,126 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "bcrypt>=5.0.0",
-    "click>=8.3.1",
-    "ruff>=0.14.7",
+    "aioboto3>=15.5.0",
+    "alembic>=1.18.4",
+    "asyncpg>=0.31.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.128.7",
+    "greenlet>=3.3.1",
+    "minio>=7.2.20",
+    "psycopg2-binary>=2.9.11",
+    "pwdlib[argon2]>=0.3.0",
+    "pydantic-settings>=2.12.0",
+    "python-jose>=3.5.0",
+    "redis>=7.2.0",
+    "sqlalchemy>=2.0.46",
+    "structlog>=25.5.0",
+    "uvicorn>=0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0",
+    "def-form>=0.2.0",
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.def-form]
+max_def_length = 100
+max_inline_args = 2
+indent_size = 4
+exclude = [
+    ".venv/",
+]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+follow_imports = "silent"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+exclude = [
+    ".venv/",
+    "tests/cases/",
 ]
 
 [tool.ruff]
 target-version = "py313"
 line-length = 120
 exclude = [
-  ".venv",
-]
-format.quote-style = "single"
-lint.select = [
-  "F", # Pyflakes
-  # "E/W", # pycodestyle
-  "C90", # mccabe
-  # "I", # isort
-  # "N", # pep8-naming
-  # "D", # pydocstyle
-  "UP", # pyupgrade
-  "YTT", # flake8-2020
-  # "ANN", # flake8-annotations
-  # "ASYNC", # flake8-async
-  # "TRIO", # flake8-trio
-  # "S", # flake8-bandit
-  # "BLE", # flake8-blind-except
-  # "FBT", # flake8-boolean-trap
-  "B", # flake8-bugbear
-  # "A", # flake8-builtins
-  # "COM", # flake8-commas
-  # "CPY", # flake8-copyright
-  "C4", # flake8-comprehensions
-  # "DTZ", # flake8-datetimez
-  "T10", # flake8-debugger
-  # "DJ", # flake8-django
-  # "EM", # flake8-errmsg
-  # "EXE", # flake8-executable
-  # "FA", # flake8-future-annotations
-  "ISC", # flake8-implicit-str-concat
-  # "ICN", # flake8-import-conventions
-  "G", # flake8-logging-format
-  "INP", # flake8-no-pep420
-  # "PIE", # flake8-pie
-  "T20", # flake8-print
-  # "PYI", # flake8-pyi
-  # "PT", # flake8-pytest-style
-  # "Q", # flake8-quotes
-  "RSE", # flake8-raise
-  "RET", # flake8-return
-  "SLF", # flake8-self
-  # "SLOT", # flake8-slots
-  "SIM", # flake8-simplify
-  "TID", # flake8-tidy-imports
-  # "TCH", # flake8-type-checking
-  # "INT", # flake8-gettext
-  # "ARG", # flake8-unused-arguments
-  "PTH", # flake8-use-pathlib
-  # "TD", # flake8-todos
-  # "FIX", # flake8-fixme
-  "ERA", # eradicate
-  # "PD", # pandas-vet
-  # "PGH", # pygrep-hooks
-  "PL", # Pylint
-  # "TRY", # tryceratops
-  # "FLY", # flynt
-  # "NPY", # NumPy-specific rules
-  # "AIR", # Airflow
-  # "PERF", # Perflint
-  # "FURB", # refurb
-  # "LOG", # flake8-logging
-  "RUF" # Ruff-specific rules
+    ".venv/",
+    "tests/cases/",
 ]
 lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.mccabe.max-complexity = 20
-lint.ignore = [
-  "RUF001",  # String contains ambiguous characters (false positives for Cyrillic)
-  "RUF002",  # Docstring contains ambiguous characters (false positives for Cyrillic)
-  "RUF003",  # Comment contains ambiguous characters (false positives for Cyrillic)
-  "PLW0603",  # Using global statement (needed for singleton pattern)
-  "PLW0602",  # Using global without assignment (needed for cleanup)
-  "C901",  # Function is too complex (acceptable for interactive CLI)
-  "PLR0912",  # Too many branches (acceptable for command handlers)
-  "PLR0915",  # Too many statements (acceptable for interactive CLI)
+lint.select = [
+    "F", # Pyflakes
+    # "E/W", # pycodestyle
+    "C90", # mccabe
+    # "I", # isort
+    # "N", # pep8-naming
+    # "D", # pydocstyle
+    "UP", # pyupgrade
+    "YTT", # flake8-2020
+    # "ANN", # flake8-annotations
+    # "ASYNC", # flake8-async
+    # "TRIO", # flake8-trio
+    # "S", # flake8-bandit
+    # "BLE", # flake8-blind-except
+    # "FBT", # flake8-boolean-trap
+    "B", # flake8-bugbear
+    # "A", # flake8-builtins
+    # "COM", # flake8-commas
+    # "CPY", # flake8-copyright
+    "C4", # flake8-comprehensions
+    # "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    # "DJ", # flake8-django
+    # "EM", # flake8-errmsg
+    # "EXE", # flake8-executable
+    # "FA", # flake8-future-annotations
+    #  "ISC", # flake8-implicit-str-concat
+    # "ICN", # flake8-import-conventions
+    "G", # flake8-logging-format
+    "INP", # flake8-no-pep420
+    # "PIE", # flake8-pie
+    "T20", # flake8-print
+    # "PYI", # flake8-pyi
+    # "PT", # flake8-pytest-style
+    # "Q", # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SLF", # flake8-self
+    # "SLOT", # flake8-slots
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    # "TCH", # flake8-type-checking
+    # "INT", # flake8-gettext
+    # "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    # "TD", # flake8-todos
+    # "FIX", # flake8-fixme
+    "ERA", # eradicate
+    # "PD", # pandas-vet
+    # "PGH", # pygrep-hooks
+    "PL", # Pylint
+    # "TRY", # tryceratops
+    # "FLY", # flynt
+    # "NPY", # NumPy-specific rules
+    # "AIR", # Airflow
+    # "PERF", # Perflint
+    # "FURB", # refurb
+    # "LOG", # flake8-logging
+    "RUF", # Ruff-specific rules
 ]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true

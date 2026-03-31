@@ -1,219 +1,81 @@
 # NetVault
 
-Асинхронное файловое хранилище на основе TCP протокола с авторизацией пользователей.
+Cloud file storage with FastAPI backend and MinIO object storage.
 
----
+## Description
 
-## Описание
+API application for file storage and management with user authentication and bucket-based organization.
 
-Проект представляет собой клиент-серверное приложение для хранения и управления файлами пользователей. Сервер обрабатывает множественные подключения асинхронно, каждый пользователь имеет изолированное хранилище файлов.
+## Features
 
-## Возможности
+- User authentication with JWT tokens
+- Bucket management with permission system (read, write, admin)
+- Folder hierarchy
+- File upload (simple and multipart)
+- File operations (rename, move, delete)
+- Public links for file sharing
 
-- 🔐 Авторизация пользователей с хешированием паролей (bcrypt)
-- 📁 Управление файлами: загрузка, скачивание, удаление, просмотр списка
-- 📂 Поддержка подпапок
-- 🔄 Асинхронная обработка множественных клиентов
-- 📊 Прогресс-бар для больших файлов
-- 🛡️ Валидация путей и защита от path traversal
-- 📝 Логирование операций
-
-## Установка
-
-### Требования
+## Requirements
 
 - Python >= 3.13
-- uv (рекомендуется) или pip
+- PostgreSQL
+- Redis
+- MinIO (or compatible S3 storage)
 
-### Установка зависимостей
+## Installation
 
 ```bash
-# С использованием uv
 uv sync
-
-# Или с использованием pip
-pip install -e .
 ```
 
-## Использование
+## Configuration
 
-### Запуск сервера
+Create `.env` file:
+
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=your_password
+DB_NAME=netvault
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+MINIO_ENDPOINT=localhost:9000
+MINIO_EXTERNAL_ENDPOINT=192.168.1.35:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+
+YC_POSTBOX_ACCESS_KEY=your_access_key
+YC_POSTBOX_SECRET_KEY=your_secret_key
+YC_POSTBOX_REGION=your_region
+YC_POSTBOX_ENDPOINT=https://postbox.cloud.yandex.net
+MAIL_FROM=no-reply@netvault.ru
+
+JWT_SECRET=your_secret_key
+```
+
+## Running
 
 ```bash
-python -m src.main server
+uv run python -m src
 ```
 
-Сервер запустится на `localhost:8000` (по умолчанию).
+## API Endpoints
 
-### Использование CLI клиента
+You can find it after server startup. There will be the route in terminal for Swagger documentation (which provided by FastAPI automatically)
 
-#### Обычные команды
+## Development
+
+Run linters:
 
 ```bash
-# Регистрация нового пользователя
-python -m src.main register --login username --password password
-
-# Авторизация
-python -m src.main login --login username --password password
-
-# Список файлов (можно передать --login и --password для автоматической авторизации)
-python -m src.main list [path] [--login username] [--password password]
-
-# Загрузка файла на сервер (можно передать --login и --password для автоматической авторизации)
-python -m src.main put local_file.txt remote_file.txt [--login username] [--password password]
-
-# Скачивание файла с сервера (можно передать --login и --password для автоматической авторизации)
-python -m src.main get remote_file.txt local_file.txt [--login username] [--password password]
-
-# Удаление файла или папки (можно передать --login и --password для автоматической авторизации)
-python -m src.main delete path/to/file [--login username] [--password password]
+just lint
 ```
 
-#### Интерактивный режим
-
-Для работы с сохранением соединения между командами:
+Run migrations:
 
 ```bash
-python -m src.main interactive
-```
-
-В интерактивном режиме доступны команды:
-- `login <логин> <пароль>` - авторизация
-- `register <логин> <пароль>` - регистрация
-- `list [path]` - список файлов
-- `get <remote> <local>` - скачать файл
-- `put <local> <remote>` - загрузить файл
-- `delete <path>` - удалить файл/папку
-- `help` - справка
-- `exit` - выход
-
-## Архитектура
-
-### Структура проекта
-
-```
-src/
-├── client/             # Клиентская часть
-│   ├── cli.py          # CLI интерфейс (click)
-│   ├── client.py       # TCP клиент
-│   └── protocol.py     # Протокол обмена данными
-├── server/             # Серверная часть
-│   ├── __init__.py     # Асинхронный TCP сервер
-│   ├── server.py       # TCP сервер
-│   ├── auth.py         # Авторизация пользователей
-│   ├── storage.py      # Файловое хранилище
-│   └── protocol.py     # Протокол обмена данными
-└── utils/              # Утилиты
-    ├── config.py       # Конфигурация
-    ├── constants.py    # Константы
-    ├── exceptions.py   # Кастомные исключения
-    ├── logger.py       # Логирование
-    ├── security.py     # Безопасность (хеширование)
-    └── types.py        # Типы данных
-```
-
-### Протокол обмена данными
-
-- **JSON команды**: Команды отправляются в формате JSON с полем `command`
-- **Бинарные данные**: Файлы передаются бинарно после JSON метаданных
-- **Формат**: Длина сообщения (4 байта) + данные
-
-### Хранилище
-
-- Пользователи хранятся в `users.json` (UUID, логин, хеш пароля)
-- Файлы пользователей в `storage/{user_uuid}/`
-- Каждый пользователь имеет изолированное хранилище
-
-## Конфигурация
-
-Настройки можно изменить через переменные окружения или в `src/utils/config.py`:
-
-- `HOST` - адрес сервера (по умолчанию: localhost)
-- `PORT` - порт сервера (по умолчанию: 8000)
-- `CHUNK_SIZE` - размер чанка для передачи файлов (по умолчанию: 65536 байт)
-- `MAX_FILE_SIZE` - максимальный размер файла (по умолчанию: 1 GB)
-- `MIN_PASSWORD_LENGTH` - минимальная длина пароля (по умолчанию: 6)
-- `MAX_LOGIN_LENGTH` - максимальная длина логина (по умолчанию: 50)
-- `MAX_PATH_LENGTH` - максимальная длина пути (по умолчанию: 4096)
-
-## Примеры использования
-
-### Авторизация и работа с файлами
-
-```bash
-# 1. Запустить сервер
-python -m src.main server
-
-# 2. В другом терминале - зарегистрироваться
-python -m src.main register --login user1 --password pass123
-
-# 3. Загрузить файл с авторизацией в команде
-python -m src.main put ~/Documents/file.txt documents/file.txt --login user1 --password pass123
-
-# 4. Посмотреть список файлов с авторизацией
-python -m src.main list --login user1 --password pass123
-
-# 5. Скачать файл с авторизацией
-python -m src.main get documents/file.txt ~/Downloads/file.txt --login user1 --password pass123
-
-# 6. Удалить файл с авторизацией
-python -m src.main delete documents/file.txt --login user1 --password pass123
-```
-
-### Интерактивный режим
-
-```bash
-python -m src.main interactive
-
-> login user1 pass123
-Авторизация успешна
-> list
-📄 file.txt (1024 байт)
-📁 documents
-> put ~/test.txt test.txt
-Загрузка файла (512 байт)...
-Файл загружен: test.txt
-> list
-📄 file.txt (1024 байт)
-📄 test.txt (512 байт)
-📁 documents
-> exit
-```
-
-## Безопасность
-
-- Пароли хранятся в виде bcrypt хешей
-- Защита от path traversal атак
-- Валидация входных данных
-- Ограничение размера файлов
-- Изоляция файлов пользователей
-
-## Логирование
-
-Логи сохраняются в:
-- Консоль
-- Файл `logs/app.log` (при log_to_file в настройках)
-
-## Разработка
-
-### Запуск в режиме разработки
-
-```bash
-# Установить зависимости
-uv sync
-
-# Запустить сервер
-python -m src.main server
-
-# В другом терминале запустить клиент
-python -m src.main interactive
-```
-
-### Если имеется установленный [Just](https://github.com/casey/just)
-```bash
-# Запуск сервера
-just run-server
-
-# Запуск клиента в другом терминале (сразу в интерактивном режиме)
-just run-cli
+alembic upgrade head
 ```

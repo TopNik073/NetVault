@@ -1,43 +1,27 @@
-# Directory for source code
-SOURCE_DIR := "src"
+SOURCE_PATH := "src"
+TESTS_PATH := "tests"
 
-# Default command: list available commands
 default:
     @just --list
 
-# Environment variables file
-set dotenv-filename := ".env"
+upgrade:
+    uv lock --upgrade
 
-# Run all checks: linters and formatting validation
-lint: ruff-check
+format:
+    uv run ruff format {{ SOURCE_PATH }}
 
-# --- Dependency Management ---
+lint:
+    uv run ruff check {{ SOURCE_PATH }}
 
-# Update project dependencies
-[group('dependencies')]
-update:
-    uv sync --upgrade
+mypy:
+    uv run python -m mypy --pretty {{ SOURCE_PATH }}
 
-# Sync project dependencies
-[group('dependencies')]
-sync:
-    uv sync
+fix:
+    uv run ruff check --fix --unsafe-fixes {{ SOURCE_PATH }}
 
-# --- Linters and Formatting ---
-
-# Automatically format code
-[group('linters')]
-ruff-format:
-    uv run ruff check --fix --unsafe-fixes {{ SOURCE_DIR }}
-    uv run ruff format .
-
-# Lint code using Ruff
-[group('linters')]
-ruff-check:
-    uv run ruff check {{ SOURCE_DIR }}
-
-run-server:
-    uv run python -m src.main server
-
-run-cli:
-    uv run python -m src.main interactive
+tests:
+    uv run pytest \
+        --cov=def_form \
+        --cov-report=lcov:tests.lcov \
+        --cov-report=term \
+        tests/
