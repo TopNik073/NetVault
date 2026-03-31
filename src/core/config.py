@@ -30,6 +30,7 @@ class Config(BaseSettings):
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: SecretStr
     MINIO_SECURE: bool = False
+    MINIO_REGION: str = 'ru-central1'
 
     DB_HOST: str
     DB_PORT: str

@@ -16,6 +16,7 @@ class MinioClient:
             access_key=config.MINIO_ACCESS_KEY,
             secret_key=config.MINIO_SECRET_KEY.get_secret_value(),
             secure=config.MINIO_SECURE,
+            region=config.MINIO_REGION,
         )
 
         self._external_endpoint = config.MINIO_EXTERNAL_ENDPOINT
@@ -25,6 +26,7 @@ class MinioClient:
                 access_key=config.MINIO_ACCESS_KEY,
                 secret_key=config.MINIO_SECRET_KEY.get_secret_value(),
                 secure=config.MINIO_SECURE,
+                region=config.MINIO_REGION,
             )
         else:
             self._external_for_sign = self._client
@@ -32,6 +34,7 @@ class MinioClient:
         self._boto3_session = aioboto3.Session(
             aws_access_key_id=config.MINIO_ACCESS_KEY,
             aws_secret_access_key=config.MINIO_SECRET_KEY.get_secret_value(),
+            region_name=config.MINIO_REGION,
         )
         self._boto3_config = BotoConfig(
             signature_version='s3v4',
