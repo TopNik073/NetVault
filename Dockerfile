@@ -31,4 +31,4 @@ COPY alembic/ ./alembic/
 # Run migrations and start the application
 CMD while ! nc -z db 5432; do sleep 0.1; done && \
     ./.venv/bin/alembic upgrade head && \
-    ./.venv/bin/python -m src.main
+    ./.venv/bin/python -m src
