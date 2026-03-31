@@ -1,0 +1,2 @@
+class BasePostgresError(Exception):
+    pass

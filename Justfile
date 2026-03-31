@@ -28,16 +28,16 @@ sync:
 # Automatically format code
 [group('linters')]
 ruff-format:
-    uv run ruff check --fix --unsafe-fixes {{ SOURCE_DIR }}
-    uv run ruff format .
+    python -m ruff check --fix --unsafe-fixes {{ SOURCE_DIR }}
+    python -m ruff format .
 
 # Lint code using Ruff
 [group('linters')]
 ruff-check:
-    uv run ruff check {{ SOURCE_DIR }}
+    python -m ruff check {{ SOURCE_DIR }}
 
-run-server:
-    uv run python -m src.main server
-
-run-cli:
-    uv run python -m src.main interactive
+# --- Building ---
+# Build local
+[group('building')]
+build-local:
+    docker compose -f docker-compose.local.yml up -d --build
