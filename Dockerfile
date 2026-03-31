@@ -26,7 +26,7 @@ RUN pip install --upgrade "uv>=0.6,<1.0"
 COPY --from=builder /app_dir/.venv ./.venv
 COPY src/ ./src
 COPY alembic.ini ./
-COPY migrations/ ./migrations/
+COPY alembic/ ./alembic/
 
 # Run migrations and start the application
 CMD while ! nc -z db 5432; do sleep 0.1; done && \
