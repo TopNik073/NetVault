@@ -15,21 +15,12 @@ class MinioClient:
             endpoint=config.MINIO_ENDPOINT,
             access_key=config.MINIO_ACCESS_KEY,
             secret_key=config.MINIO_SECRET_KEY.get_secret_value(),
-            secure=config.MINIO_SECURE,
-            region=config.MINIO_REGION,
+            secure=False,
         )
 
         self._external_endpoint = config.MINIO_EXTERNAL_ENDPOINT
-        if self._external_endpoint:
-            self._external_for_sign = Minio(
-                endpoint=self._external_endpoint,
-                access_key=config.MINIO_ACCESS_KEY,
-                secret_key=config.MINIO_SECRET_KEY.get_secret_value(),
-                secure=config.MINIO_SECURE,
-                region=config.MINIO_REGION,
-            )
-        else:
-            self._external_for_sign = self._client
+        self._scheme = 'https' if config.MINIO_SECURE else 'http'
+        self._endpoint_url = f'{self._scheme}://{self._external_endpoint}' if self._external_endpoint else None
 
         self._boto3_session = aioboto3.Session(
             aws_access_key_id=config.MINIO_ACCESS_KEY,
@@ -62,12 +53,29 @@ class MinioClient:
     async def get_presigned_download_url(
         self, bucket_name: str, object_name: str, expires_in: int = 3600
     ) -> tuple[str, datetime]:
-        url = await asyncio.to_thread(
-            self._external_for_sign.presigned_get_object,
-            bucket_name,
-            object_name,
-            expires=timedelta(seconds=expires_in),
-        )
+        if self._endpoint_url:
+            async with self._boto3_session.client(
+                's3',
+                endpoint_url=self._endpoint_url,
+                config=self._boto3_config,
+                region_name=config.MINIO_REGION,
+            ) as client:
+                url = await client.generate_presigned_url(
+                    ClientMethod='get_object',
+                    HttpMethod='GET',
+                    Params={
+                        'Bucket': bucket_name,
+                        'Key': object_name,
+                    },
+                    ExpiresIn=expires_in,
+                )
+        else:
+            url = await asyncio.to_thread(
+                self._client.presigned_get_object,
+                bucket_name,
+                object_name,
+                expires=timedelta(seconds=expires_in),
+            )
 
         expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
         return url, expires_at
@@ -79,12 +87,30 @@ class MinioClient:
     async def presigned_put_object(
         self, bucket_name: str, object_name: str, expires: timedelta = timedelta(hours=1)
     ) -> str:
-        return await asyncio.to_thread(
-            self._external_for_sign.presigned_put_object,
-            bucket_name,
-            object_name,
-            expires=expires,
-        )
+        if self._endpoint_url:
+            expires_seconds = int(expires.total_seconds())
+            async with self._boto3_session.client(
+                's3',
+                endpoint_url=self._endpoint_url,
+                config=self._boto3_config,
+                region_name=config.MINIO_REGION,
+            ) as client:
+                return await client.generate_presigned_url(
+                    ClientMethod='put_object',
+                    HttpMethod='PUT',
+                    Params={
+                        'Bucket': bucket_name,
+                        'Key': object_name,
+                    },
+                    ExpiresIn=expires_seconds,
+                )
+        else:
+            return await asyncio.to_thread(
+                self._client.presigned_put_object,
+                bucket_name,
+                object_name,
+                expires=expires,
+            )
 
     async def create_multipart_upload(self, bucket_name: str, object_name: str) -> str:
         return await asyncio.to_thread(
@@ -102,9 +128,7 @@ class MinioClient:
         part_number: int,
         expires: timedelta = timedelta(hours=1),
     ) -> str:
-        endpoint = self._external_endpoint or config.MINIO_ENDPOINT
-        scheme = 'https' if config.MINIO_SECURE else 'http'
-        endpoint_url = f'{scheme}://{endpoint}'
+        endpoint_url = self._endpoint_url or f'http://{config.MINIO_ENDPOINT}'
 
         expires_seconds = int(expires.total_seconds())
 
@@ -112,6 +136,7 @@ class MinioClient:
             's3',
             endpoint_url=endpoint_url,
             config=self._boto3_config,
+            region_name=config.MINIO_REGION,
         ) as client:
             return await client.generate_presigned_url(
                 ClientMethod='upload_part',
@@ -132,9 +157,7 @@ class MinioClient:
         upload_id: str,
         parts: list[dict],
     ) -> None:
-        endpoint = self._external_endpoint or config.MINIO_ENDPOINT
-        scheme = 'https' if config.MINIO_SECURE else 'http'
-        endpoint_url = f'{scheme}://{endpoint}'
+        endpoint_url = self._endpoint_url or f'http://{config.MINIO_ENDPOINT}'
 
         s3_parts = [{'ETag': p['ETag'].strip('"'), 'PartNumber': p['PartNumber']} for p in parts]
 
@@ -142,6 +165,7 @@ class MinioClient:
             's3',
             endpoint_url=endpoint_url,
             config=self._boto3_config,
+            region_name=config.MINIO_REGION,
         ) as client:
             await client.complete_multipart_upload(
                 Bucket=bucket_name,
@@ -156,14 +180,13 @@ class MinioClient:
         object_name: str,
         upload_id: str,
     ) -> None:
-        endpoint = self._external_endpoint or config.MINIO_ENDPOINT
-        scheme = 'https' if config.MINIO_SECURE else 'http'
-        endpoint_url = f'{scheme}://{endpoint}'
+        endpoint_url = self._endpoint_url or f'http://{config.MINIO_ENDPOINT}'
 
         async with self._boto3_session.client(
             's3',
             endpoint_url=endpoint_url,
             config=self._boto3_config,
+            region_name=config.MINIO_REGION,
         ) as client:
             await client.abort_multipart_upload(
                 Bucket=bucket_name,
