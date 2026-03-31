@@ -31,4 +31,4 @@ COPY alembic/ ./alembic/
 # Run migrations and start the application
 CMD while ! nc -z db 5432; do sleep 0.1; done && \
     ./.venv/bin/alembic upgrade head && \
-    ./.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 
+    ./.venv/bin/uv run python -m src
