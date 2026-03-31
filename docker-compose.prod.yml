@@ -37,6 +37,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_network
+    extra_hosts:
+      - "netvault.ru:host_gateway"
 
 
   redis:
